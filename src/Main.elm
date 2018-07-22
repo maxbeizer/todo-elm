@@ -1,8 +1,8 @@
 module Main exposing (..)
 
-import Html exposing (Html, text, div, beginnerProgram, button, input, span)
+import Html exposing (Html, text, div, beginnerProgram, button, input, span, form)
 import Html.Attributes exposing (class, value, autofocus, placeholder)
-import Html.Events exposing (onInput, onClick)
+import Html.Events exposing (onInput, onClick, onSubmit)
 
 
 type Msg
@@ -20,7 +20,7 @@ type alias Model =
 view : Model -> Html Msg
 view model =
     div [ class "col-12 col-sm-6 offset-sm-3" ]
-        [ div [ class "row" ]
+        [ form [ class "row", onSubmit AddTodo ]
             [ div [ class "col-9" ]
                 [ input
                     [ onInput UpdateText
@@ -33,7 +33,7 @@ view model =
                 ]
             , div [ class "col-3" ]
                 [ button
-                    [ onClick AddTodo, class "btn btn-primary form-control" ]
+                    [ class "btn btn-primary form-control" ]
                     [ text "+" ]
                 ]
             ]
