@@ -1,7 +1,7 @@
 module Main exposing (..)
 
 import Html exposing (Html, text, div, beginnerProgram, button, input, span)
-import Html.Attributes exposing (class, value, autofocus)
+import Html.Attributes exposing (class, value, autofocus, placeholder)
 import Html.Events exposing (onInput, onClick)
 
 
@@ -19,20 +19,39 @@ type alias Model =
 
 view : Model -> Html Msg
 view model =
-    div [ class "text-center" ]
-        [ input [ onInput UpdateText, value model.text, autofocus True ] []
-        , button [ onClick AddTodo, class "btn btn-primary" ]
-            [ text "Add Todo" ]
-        , div []
-            (List.indexedMap
-                (\index todo ->
-                    div []
-                        [ text todo
-                        , span [ onClick (RemoveTodo index) ] [ text "X" ]
-                        ]
-                )
-                model.todos
-            )
+    div [ class "col-12 col-sm-6 offset-sm-3" ]
+        [ div [ class "row" ]
+            [ div [ class "col-9" ]
+                [ input
+                    [ onInput UpdateText
+                    , value model.text
+                    , autofocus True
+                    , class "form-control"
+                    , placeholder "Enter a todo"
+                    ]
+                    []
+                ]
+            , div [ class "col-3" ]
+                [ button
+                    [ onClick AddTodo, class "btn btn-primary form-control" ]
+                    [ text "+" ]
+                ]
+            ]
+        , div [] (List.indexedMap viewTodo model.todos)
+        ]
+
+
+viewTodo : Int -> String -> Html Msg
+viewTodo index todo =
+    div [ class "card" ]
+        [ div [ class "card-block" ]
+            [ text todo
+            , span
+                [ onClick (RemoveTodo index)
+                , class "float-right"
+                ]
+                [ text "✖" ]
+            ]
         ]
 
 
