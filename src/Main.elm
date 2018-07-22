@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (class, value, autofocus, placeholder)
@@ -141,18 +141,29 @@ update msg model =
                 )
 
 
+port saveTodos : List String -> Cmd msg
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
 
 
-main : Program Never Model Msg
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+    ( Model "" flags.todos Nothing
+    , Cmd.none
+    )
+
+
+type alias Flags =
+    { todos : List String }
+
+
+main : Program Flags Model Msg
 main =
-    program
-        { init =
-            ( Model "" [ "Laundry", "Dishes" ] Nothing
-            , Cmd.none
-            )
+    programWithFlags
+        { init = init
         , view = view
         , update = update
         , subscriptions = subscriptions
