@@ -136,7 +136,9 @@ update msg model =
                         )
                         model.todos
             in
-                ( { model | editing = Nothing, todos = newTodos }, Cmd.none )
+                ( { model | editing = Nothing, todos = newTodos }
+                , Cmd.none
+                )
 
 
 subscriptions : Model -> Sub Msg
@@ -148,10 +150,7 @@ main : Program Never Model Msg
 main =
     program
         { init =
-            ( { text = ""
-              , todos = [ "Laundry", "Dishes" ]
-              , editing = Nothing
-              }
+            ( Model "" [ "Laundry", "Dishes" ] Nothing
             , Cmd.none
             )
         , view = view
