@@ -1,7 +1,7 @@
 port module Main exposing (..)
 
 import Html exposing (..)
-import Html.Attributes exposing (class, value, autofocus, placeholder)
+import Html.Attributes exposing (class, value, autofocus, placeholder, style, type_, checked)
 import Html.Events exposing (onInput, onClick, onSubmit, onDoubleClick)
 
 
@@ -11,6 +11,7 @@ type Msg
     | RemoveTodo Int
     | Edit Int String
     | EditSave Int String
+    | ToggleTodo Int
 
 
 type alias TodoEdit =
@@ -19,9 +20,15 @@ type alias TodoEdit =
     }
 
 
+type alias Todo =
+    { text : String
+    , completed : Bool
+    }
+
+
 type alias Model =
     { text : String
-    , todos : List String
+    , todos : List Todo
     , editing : Maybe TodoEdit
     }
 
@@ -50,7 +57,7 @@ view model =
         ]
 
 
-viewTodo : Maybe TodoEdit -> Int -> String -> Html Msg
+viewTodo : Maybe TodoEdit -> Int -> Todo -> Html Msg
 viewTodo editing index todo =
     case editing of
         Just todoEdit ->
@@ -79,13 +86,29 @@ viewEditTodo index todoEdit =
         ]
 
 
-viewNormalTodo : Int -> String -> Html Msg
+viewNormalTodo : Int -> Todo -> Html Msg
 viewNormalTodo index todo =
     div [ class "card" ]
         [ div [ class "card-block" ]
-            [ span
-                [ onDoubleClick (Edit index todo) ]
-                [ text todo ]
+            [ input
+                [ onClick (ToggleTodo index)
+                , type_ "checkbox"
+                , checked todo.completed
+                , class "mr-3"
+                ]
+                []
+            , span
+                [ onDoubleClick (Edit index todo.text)
+                , style
+                    [ ( "text-decoration"
+                      , if todo.completed then
+                            "line-through"
+                        else
+                            "none"
+                      )
+                    ]
+                ]
+                [ text todo.text ]
             , span
                 [ onClick (RemoveTodo index)
                 , class "float-right"
@@ -102,9 +125,13 @@ update msg model =
             ( { model | text = newText }, Cmd.none )
 
         AddTodo ->
-            ( { model | text = "", todos = model.todos ++ [ model.text ] }
-            , Cmd.none
-            )
+            let
+                newTodos =
+                    model.todos ++ [ Todo model.text False ]
+            in
+                ( { model | text = "", todos = newTodos }
+                , saveTodos newTodos
+                )
 
         RemoveTodo index ->
             let
@@ -117,7 +144,7 @@ update msg model =
                 newTodos =
                     beforeTodos ++ afterTodos
             in
-                ( { model | todos = newTodos }, Cmd.none )
+                ( { model | todos = newTodos }, saveTodos newTodos )
 
         Edit index todoText ->
             ( { model | editing = Just { index = index, text = todoText } }
@@ -130,18 +157,32 @@ update msg model =
                     List.indexedMap
                         (\i todo ->
                             if i == index then
-                                todoText
+                                { todo | text = todoText }
                             else
                                 todo
                         )
                         model.todos
             in
                 ( { model | editing = Nothing, todos = newTodos }
-                , Cmd.none
+                , saveTodos newTodos
                 )
 
+        ToggleTodo index ->
+            let
+                newTodos =
+                    List.indexedMap
+                        (\i todo ->
+                            if i == index then
+                                { todo | completed = not todo.completed }
+                            else
+                                todo
+                        )
+                        model.todos
+            in
+                ( { model | todos = newTodos }, saveTodos newTodos )
 
-port saveTodos : List String -> Cmd msg
+
+port saveTodos : List Todo -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
@@ -157,7 +198,7 @@ init flags =
 
 
 type alias Flags =
-    { todos : List String }
+    { todos : List Todo }
 
 
 main : Program Flags Model Msg
