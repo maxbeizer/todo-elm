@@ -95,14 +95,16 @@ viewNormalTodo index todo =
         ]
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         UpdateText newText ->
-            { model | text = newText }
+            ( { model | text = newText }, Cmd.none )
 
         AddTodo ->
-            { model | text = "", todos = model.todos ++ [ model.text ] }
+            ( { model | text = "", todos = model.todos ++ [ model.text ] }
+            , Cmd.none
+            )
 
         RemoveTodo index ->
             let
@@ -115,10 +117,12 @@ update msg model =
                 newTodos =
                     beforeTodos ++ afterTodos
             in
-                { model | todos = newTodos }
+                ( { model | todos = newTodos }, Cmd.none )
 
         Edit index todoText ->
-            { model | editing = Just { index = index, text = todoText } }
+            ( { model | editing = Just { index = index, text = todoText } }
+            , Cmd.none
+            )
 
         EditSave index todoText ->
             let
@@ -132,17 +136,25 @@ update msg model =
                         )
                         model.todos
             in
-                { model | editing = Nothing, todos = newTodos }
+                ( { model | editing = Nothing, todos = newTodos }, Cmd.none )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
 
 
 main : Program Never Model Msg
 main =
-    beginnerProgram
-        { model =
-            { text = ""
-            , todos = [ "Laundry", "Dishes" ]
-            , editing = Nothing
-            }
+    program
+        { init =
+            ( { text = ""
+              , todos = [ "Laundry", "Dishes" ]
+              , editing = Nothing
+              }
+            , Cmd.none
+            )
         , view = view
         , update = update
+        , subscriptions = subscriptions
         }
