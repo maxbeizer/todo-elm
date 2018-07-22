@@ -21,6 +21,7 @@ type alias Model =
 
 type Msg
     = Increment
+    | Decrement
 
 
 -- update : Msg -> Model -> ( Model, Cmd Msg )
@@ -28,6 +29,8 @@ update msg model =
     case msg of
       Increment ->
         model + 1
+      Decrement ->
+        model - 1
 
 
 
@@ -38,11 +41,15 @@ view : Model -> Html Msg
 view model =
     div [ class "text-center" ]
         [ div [] [ text (toString model) ]
-        , button
-          [ class "btn btn-primary", onClick Increment ]
-          [ text "+" ]
+        , div [ class "btn-group" ]
+            [ button
+                [ class "btn btn-primary", onClick Increment ]
+                [ text "+" ]
+            , button
+                [ class "btn btn-danger", onClick Decrement ]
+                [ text "-" ]
+            ]
         ]
-
 
 
 ---- PROGRAM ----
