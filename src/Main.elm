@@ -1,19 +1,28 @@
 module Main exposing (..)
 
-import Html exposing (Html, text, div, beginnerProgram, button, input, span, form)
+import Html exposing (..)
 import Html.Attributes exposing (class, value, autofocus, placeholder)
-import Html.Events exposing (onInput, onClick, onSubmit)
+import Html.Events exposing (onInput, onClick, onSubmit, onDoubleClick)
 
 
 type Msg
     = UpdateText String
     | AddTodo
     | RemoveTodo Int
+    | Edit Int String
+    | EditSave Int String
+
+
+type alias TodoEdit =
+    { index : Int
+    , text : String
+    }
 
 
 type alias Model =
     { text : String
     , todos : List String
+    , editing : Maybe TodoEdit
     }
 
 
@@ -37,15 +46,46 @@ view model =
                     [ text "+" ]
                 ]
             ]
-        , div [] (List.indexedMap viewTodo model.todos)
+        , div [] (List.indexedMap (viewTodo model.editing) model.todos)
         ]
 
 
-viewTodo : Int -> String -> Html Msg
-viewTodo index todo =
+viewTodo : Maybe TodoEdit -> Int -> String -> Html Msg
+viewTodo editing index todo =
+    case editing of
+        Just todoEdit ->
+            if todoEdit.index == index then
+                viewEditTodo index todoEdit
+            else
+                viewNormalTodo index todo
+
+        Nothing ->
+            viewNormalTodo index todo
+
+
+viewEditTodo : Int -> TodoEdit -> Html Msg
+viewEditTodo index todoEdit =
     div [ class "card" ]
         [ div [ class "card-block" ]
-            [ text todo
+            [ form [ onSubmit (EditSave todoEdit.index todoEdit.text) ]
+                [ input
+                    [ onInput (Edit index)
+                    , class "form-control"
+                    , value todoEdit.text
+                    ]
+                    []
+                ]
+            ]
+        ]
+
+
+viewNormalTodo : Int -> String -> Html Msg
+viewNormalTodo index todo =
+    div [ class "card" ]
+        [ div [ class "card-block" ]
+            [ span
+                [ onDoubleClick (Edit index todo) ]
+                [ text todo ]
             , span
                 [ onClick (RemoveTodo index)
                 , class "float-right"
@@ -77,11 +117,32 @@ update msg model =
             in
                 { model | todos = newTodos }
 
+        Edit index todoText ->
+            { model | editing = Just { index = index, text = todoText } }
+
+        EditSave index todoText ->
+            let
+                newTodos =
+                    List.indexedMap
+                        (\i todo ->
+                            if i == index then
+                                todoText
+                            else
+                                todo
+                        )
+                        model.todos
+            in
+                { model | editing = Nothing, todos = newTodos }
+
 
 main : Program Never Model Msg
 main =
     beginnerProgram
-        { model = { text = "", todos = [] }
+        { model =
+            { text = ""
+            , todos = [ "Laundry", "Dishes" ]
+            , editing = Nothing
+            }
         , view = view
         , update = update
         }
