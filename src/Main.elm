@@ -7,6 +7,7 @@ import Html.Events exposing (onClick)
 
 type Msg
     = Increment Int
+    | Decrement Int
     | AddCount
 
 
@@ -21,6 +22,9 @@ viewCount index count =
         , button
             [ class "btn btn-primary ml-2", onClick (Increment index) ]
             [ text "+" ]
+        , button
+            [ class "btn btn-primary ml-2", onClick (Decrement index) ]
+            [ text "-" ]
         ]
 
 
@@ -44,6 +48,16 @@ update msg model =
                 (\i count ->
                     if i == index then
                         count + 1
+                    else
+                        count
+                )
+                model
+
+        Decrement index ->
+            List.indexedMap
+                (\i count ->
+                    if i == index then
+                        count - 1
                     else
                         count
                 )
