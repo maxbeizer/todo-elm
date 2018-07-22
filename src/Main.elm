@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Html exposing (Html, text, div, beginnerProgram, button, input)
+import Html exposing (Html, text, div, beginnerProgram, button, input, span)
 import Html.Attributes exposing (class, value, autofocus)
 import Html.Events exposing (onInput, onClick)
 
@@ -8,6 +8,7 @@ import Html.Events exposing (onInput, onClick)
 type Msg
     = UpdateText String
     | AddTodo
+    | RemoveTodo Int
 
 
 type alias Model =
@@ -23,7 +24,13 @@ view model =
         , button [ onClick AddTodo, class "btn btn-primary" ]
             [ text "Add Todo" ]
         , div []
-            (List.map (\todo -> div [] [ text todo ])
+            (List.indexedMap
+                (\index todo ->
+                    div []
+                        [ text todo
+                        , span [ onClick (RemoveTodo index) ] [ text "X" ]
+                        ]
+                )
                 model.todos
             )
         ]
@@ -37,6 +44,19 @@ update msg model =
 
         AddTodo ->
             { model | text = "", todos = model.todos ++ [ model.text ] }
+
+        RemoveTodo index ->
+            let
+                beforeTodos =
+                    List.take index model.todos
+
+                afterTodos =
+                    List.drop (index + 1) model.todos
+
+                newTodos =
+                    beforeTodos ++ afterTodos
+            in
+                { model | todos = newTodos }
 
 
 main : Program Never Model Msg
