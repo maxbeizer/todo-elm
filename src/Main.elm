@@ -8,6 +8,7 @@ import Html.Events exposing (onClick)
 type Msg
     = Increment Int
     | Decrement Int
+    | Remove Int
     | AddCount
 
 
@@ -25,6 +26,9 @@ viewCount index count =
         , button
             [ class "btn btn-primary ml-2", onClick (Decrement index) ]
             [ text "-" ]
+        , button
+            [ class "btn btn-primary ml-2", onClick (Remove index) ]
+            [ text "X" ]
         ]
 
 
@@ -62,6 +66,16 @@ update msg model =
                         count
                 )
                 model
+
+        Remove index ->
+            let
+                before =
+                    List.take index model
+
+                after =
+                    List.drop (index + 1) model
+            in
+                before ++ after
 
         AddCount ->
             model ++ [ 0 ]
