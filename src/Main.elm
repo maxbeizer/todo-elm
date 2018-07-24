@@ -1,9 +1,20 @@
 port module Main exposing (..)
 
 import Html exposing (..)
-import Html.Attributes exposing (class, value, autofocus, placeholder, style, type_, checked)
+import Html.Attributes
+    exposing
+        ( class
+        , value
+        , autofocus
+        , placeholder
+        , style
+        , type_
+        , checked
+        , href
+        )
 import Html.Events exposing (onInput, onClick, onSubmit, onDoubleClick)
 import Random
+import Navigation
 
 
 type Msg
@@ -15,6 +26,7 @@ type Msg
     | EditSave Int String
     | ToggleTodo Int
     | SetFilter Filter
+    | UrlChange Navigation.Location
 
 
 type Filter
@@ -99,8 +111,9 @@ viewFilter filter isFilter filterText =
     if isFilter then
         span [ class "mr-3" ] [ text filterText ]
     else
-        span
+        a
             [ class "text-primary mr-3"
+            , href ("#" ++ String.toLower filterText)
             , onClick (SetFilter filter)
             , style [ ( "cursor", "pointer" ) ]
             ]
@@ -233,6 +246,22 @@ update msg model =
         SetFilter filter ->
             ( { model | filter = filter }, Cmd.none )
 
+        UrlChange location ->
+            ( { model | filter = locationToFilter location }, Cmd.none )
+
+
+locationToFilter : Navigation.Location -> Filter
+locationToFilter location =
+    case String.toLower location.hash of
+        "#incomplete" ->
+            Incomplete
+
+        "#completed" ->
+            Completed
+
+        _ ->
+            All
+
 
 port saveTodos : List Todo -> Cmd msg
 
@@ -242,9 +271,9 @@ subscriptions model =
     Sub.none
 
 
-init : Flags -> ( Model, Cmd Msg )
-init flags =
-    ( Model "" flags.todos Nothing All
+init : Flags -> Navigation.Location -> ( Model, Cmd Msg )
+init flags location =
+    ( Model "" flags.todos Nothing (locationToFilter location)
     , Cmd.none
     )
 
@@ -255,7 +284,7 @@ type alias Flags =
 
 main : Program Flags Model Msg
 main =
-    programWithFlags
+    Navigation.programWithFlags UrlChange
         { init = init
         , view = view
         , update = update
