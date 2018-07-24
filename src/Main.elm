@@ -3,11 +3,13 @@ port module Main exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (class, value, autofocus, placeholder, style, type_, checked)
 import Html.Events exposing (onInput, onClick, onSubmit, onDoubleClick)
+import Random
 
 
 type Msg
     = UpdateText String
-    | AddTodo
+    | GenerateTodoId
+    | AddTodo Int
     | RemoveTodo Int
     | Edit Int String
     | EditSave Int String
@@ -18,17 +20,18 @@ type Msg
 type Filter
     = All
     | Incomplete
-    | Complete
+    | Completed
 
 
 type alias TodoEdit =
-    { index : Int
+    { id : Int
     , text : String
     }
 
 
 type alias Todo =
-    { text : String
+    { id : Int
+    , text : String
     , completed : Bool
     }
 
@@ -44,7 +47,7 @@ type alias Model =
 view : Model -> Html Msg
 view model =
     div [ class "col-12 col-sm-6 offset-sm-3" ]
-        [ form [ class "row", onSubmit AddTodo ]
+        [ form [ class "row", onSubmit GenerateTodoId ]
             [ div [ class "col-9" ]
                 [ input
                     [ onInput UpdateText
@@ -63,7 +66,7 @@ view model =
             ]
         , viewFilters model.filter
         , div [] <|
-            List.indexedMap
+            List.map
                 (viewTodo model.editing)
                 (filterTodos model.filter model.todos)
         ]
@@ -78,7 +81,7 @@ filterTodos filter todos =
         Incomplete ->
             List.filter (\t -> not t.completed) todos
 
-        Complete ->
+        Completed ->
             List.filter (\t -> t.completed) todos
 
 
@@ -87,7 +90,7 @@ viewFilters filter =
     div []
         [ viewFilter All (filter == All) "All"
         , viewFilter Incomplete (filter == Incomplete) "Incomplete"
-        , viewFilter Complete (filter == Complete) "Complete"
+        , viewFilter Completed (filter == Completed) "Completed"
         ]
 
 
@@ -104,26 +107,26 @@ viewFilter filter isFilter filterText =
             [ text filterText ]
 
 
-viewTodo : Maybe TodoEdit -> Int -> Todo -> Html Msg
-viewTodo editing index todo =
+viewTodo : Maybe TodoEdit -> Todo -> Html Msg
+viewTodo editing todo =
     case editing of
         Just todoEdit ->
-            if todoEdit.index == index then
-                viewEditTodo index todoEdit
+            if todoEdit.id == todo.id then
+                viewEditTodo todoEdit
             else
-                viewNormalTodo index todo
+                viewNormalTodo todo
 
         Nothing ->
-            viewNormalTodo index todo
+            viewNormalTodo todo
 
 
-viewEditTodo : Int -> TodoEdit -> Html Msg
-viewEditTodo index todoEdit =
+viewEditTodo : TodoEdit -> Html Msg
+viewEditTodo todoEdit =
     div [ class "card" ]
         [ div [ class "card-block" ]
-            [ form [ onSubmit (EditSave todoEdit.index todoEdit.text) ]
+            [ form [ onSubmit (EditSave todoEdit.id todoEdit.text) ]
                 [ input
-                    [ onInput (Edit index)
+                    [ onInput (Edit todoEdit.id)
                     , class "form-control"
                     , value todoEdit.text
                     ]
@@ -133,19 +136,19 @@ viewEditTodo index todoEdit =
         ]
 
 
-viewNormalTodo : Int -> Todo -> Html Msg
-viewNormalTodo index todo =
+viewNormalTodo : Todo -> Html Msg
+viewNormalTodo todo =
     div [ class "card" ]
         [ div [ class "card-block" ]
             [ input
-                [ onClick (ToggleTodo index)
+                [ onClick (ToggleTodo todo.id)
                 , type_ "checkbox"
                 , checked todo.completed
                 , class "mr-3"
                 ]
                 []
             , span
-                [ onDoubleClick (Edit index todo.text)
+                [ onDoubleClick (Edit todo.id todo.text)
                 , style
                     [ ( "text-decoration"
                       , if todo.completed then
@@ -157,7 +160,7 @@ viewNormalTodo index todo =
                 ]
                 [ text todo.text ]
             , span
-                [ onClick (RemoveTodo index)
+                [ onClick (RemoveTodo todo.id)
                 , class "float-right"
                 ]
                 [ text "✖" ]
@@ -171,30 +174,29 @@ update msg model =
         UpdateText newText ->
             ( { model | text = newText }, Cmd.none )
 
-        AddTodo ->
+        GenerateTodoId ->
+            ( model
+            , Random.generate AddTodo (Random.int Random.minInt Random.maxInt)
+            )
+
+        AddTodo todoId ->
             let
                 newTodos =
-                    model.todos ++ [ Todo model.text False ]
+                    model.todos ++ [ Todo todoId model.text False ]
             in
                 ( { model | text = "", todos = newTodos }
                 , saveTodos newTodos
                 )
 
-        RemoveTodo index ->
+        RemoveTodo todoId ->
             let
-                beforeTodos =
-                    List.take index model.todos
-
-                afterTodos =
-                    List.drop (index + 1) model.todos
-
                 newTodos =
-                    beforeTodos ++ afterTodos
+                    List.filter (\todo -> todo.id /= todoId) model.todos
             in
                 ( { model | todos = newTodos }, saveTodos newTodos )
 
-        Edit index todoText ->
-            ( { model | editing = Just { index = index, text = todoText } }
+        Edit todoId todoText ->
+            ( { model | editing = Just { id = todoId, text = todoText } }
             , Cmd.none
             )
 
@@ -214,12 +216,12 @@ update msg model =
                 , saveTodos newTodos
                 )
 
-        ToggleTodo index ->
+        ToggleTodo todoId ->
             let
                 newTodos =
-                    List.indexedMap
-                        (\i todo ->
-                            if i == index then
+                    List.map
+                        (\todo ->
+                            if todo.id == todoId then
                                 { todo | completed = not todo.completed }
                             else
                                 todo
