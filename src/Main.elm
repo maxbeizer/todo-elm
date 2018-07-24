@@ -12,6 +12,13 @@ type Msg
     | Edit Int String
     | EditSave Int String
     | ToggleTodo Int
+    | SetFilter Filter
+
+
+type Filter
+    = All
+    | Incomplete
+    | Complete
 
 
 type alias TodoEdit =
@@ -30,6 +37,7 @@ type alias Model =
     { text : String
     , todos : List Todo
     , editing : Maybe TodoEdit
+    , filter : Filter
     }
 
 
@@ -53,8 +61,47 @@ view model =
                     [ text "+" ]
                 ]
             ]
-        , div [] (List.indexedMap (viewTodo model.editing) model.todos)
+        , viewFilters model.filter
+        , div [] <|
+            List.indexedMap
+                (viewTodo model.editing)
+                (filterTodos model.filter model.todos)
         ]
+
+
+filterTodos : Filter -> List Todo -> List Todo
+filterTodos filter todos =
+    case filter of
+        All ->
+            todos
+
+        Incomplete ->
+            List.filter (\t -> not t.completed) todos
+
+        Complete ->
+            List.filter (\t -> t.completed) todos
+
+
+viewFilters : Filter -> Html Msg
+viewFilters filter =
+    div []
+        [ viewFilter All (filter == All) "All"
+        , viewFilter Incomplete (filter == Incomplete) "Incomplete"
+        , viewFilter Complete (filter == Complete) "Complete"
+        ]
+
+
+viewFilter : Filter -> Bool -> String -> Html Msg
+viewFilter filter isFilter filterText =
+    if isFilter then
+        span [ class "mr-3" ] [ text filterText ]
+    else
+        span
+            [ class "text-primary mr-3"
+            , onClick (SetFilter filter)
+            , style [ ( "cursor", "pointer" ) ]
+            ]
+            [ text filterText ]
 
 
 viewTodo : Maybe TodoEdit -> Int -> Todo -> Html Msg
@@ -181,6 +228,9 @@ update msg model =
             in
                 ( { model | todos = newTodos }, saveTodos newTodos )
 
+        SetFilter filter ->
+            ( { model | filter = filter }, Cmd.none )
+
 
 port saveTodos : List Todo -> Cmd msg
 
@@ -192,7 +242,7 @@ subscriptions model =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model "" flags.todos Nothing
+    ( Model "" flags.todos Nothing All
     , Cmd.none
     )
 
